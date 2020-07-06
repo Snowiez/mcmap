@@ -107,12 +107,12 @@ struct Data {
 } // namespace Terrain
 
 typedef int16_t (*sectionInterpreter)(const uint64_t,
-                                      const std::vector<int64_t> *, uint8_t,
-                                      uint8_t, uint8_t);
+                                      const std::vector<int64_t> *,
+                                      const uint16_t);
 
-int16_t blockAtPre116(const uint64_t, const std::vector<int64_t> *, uint8_t,
-                      uint8_t, uint8_t);
-int16_t blockAtPost116(const uint64_t, const std::vector<int64_t> *, uint8_t,
-                       uint8_t, uint8_t);
+int16_t blockAtPre116(const uint64_t, const std::vector<int64_t> *,
+                      const uint16_t);
+int16_t blockAtPost116(const uint64_t, const std::vector<int64_t> *,
+                       const uint16_t);
 
 #endif // WORLDLOADER_H_

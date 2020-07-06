@@ -207,6 +207,13 @@ void IsometricCanvas::drawBeams(const int64_t xPos, const int64_t zPos,
   }
 }
 
+struct section {
+  Colors::Block *colors[4096];
+  const NBT *data[4096];
+};
+
+Colors::Block *next = NULL;
+
 void IsometricCanvas::drawSection(const NBT &section, const int64_t xPos,
                                   const int64_t zPos, const uint8_t yPos,
                                   sectionInterpreter interpreter) {
@@ -257,6 +264,14 @@ void IsometricCanvas::drawSection(const NBT &section, const int64_t xPos,
     }
   }
 
+  struct section s;
+
+  for (int i = 0; i < 4096; i++) {
+    index = interpreter(blockBitLength, blockStates, i);
+    s.colors[i] = cache[index];
+    s.data[i] = &sectionPalette->operator[](index);
+  }
+
   // Main drawing loop, for every block of the section
   for (uint8_t x = 0; x < 16; x++) {
     for (uint8_t z = 0; z < 16; z++) {
@@ -295,21 +310,11 @@ void IsometricCanvas::drawSection(const NBT &section, const int64_t xPos,
         if ((yPos << 4) + y < map.minY || (yPos << 4) + y > map.maxY)
           continue;
 
-        // This is the block index as it is stored internally in the section
-        // data: we use a function pointer to call the right interpreter, as
-        // there were changes in the history of minecraft
-        index = interpreter(blockBitLength, blockStates, xReal, zReal, y);
+        next = (y != 15 ? s.colors[x + 16 * z + 256 * (y + 1)] : NULL);
 
-        if (index >= colorIndex) {
-          logger::error("Cache error in chunk {} {}: {}/{}\n", xPos, zPos,
-                        index, colorIndex);
-          continue;
-        }
-
-        // Skip air. This does increase performance, but could be tweaked.
-        if (index)
-          drawBlock(cache[index], (xPos << 4) + x, (zPos << 4) + z,
-                    (yPos << 4) + y, sectionPalette->operator[](index));
+        drawBlock(s.colors[x + 16 * z + 256 * y], (xPos << 4) + x,
+                  (zPos << 4) + z, (yPos << 4) + y,
+                  *s.data[x + 16 * z + 256 * y]);
 
         // A beam can begin at every moment in a section
         if (index == beaconIndex) {
@@ -452,6 +457,13 @@ void IsometricCanvas::drawTransparent(const size_t x, const size_t y,
   // Avoid the top and dark/light edges for a clearer look through
   uint8_t *pos = pixel(x, y + 1);
   for (uint8_t j = 1; j < 4; j++, pos = pixel(x, y + j)) {
+    for (uint8_t i = 0; i < 4; i++)
+      blend(pos + i * CHANSPERPIXEL,
+            (uint8_t *)(i < 2 ? &block->light : &block->dark));
+  }
+
+  if (next && next->primary != block->primary) {
+    pos = pixel(x, y);
     for (uint8_t i = 0; i < 4; i++)
       blend(pos + i * CHANSPERPIXEL, (uint8_t *)&block->primary);
   }
@@ -745,15 +757,16 @@ void IsometricCanvas::drawFull(const size_t x, const size_t y, const NBT &,
       {&color->dark, &color->dark, &color->light, &color->light},
       {&color->dark, &color->dark, &color->light, &color->light}};
 
+  uint8_t covered = (next && next->primary.ALPHA == 255 ? 1 : 0);
   // Top row
-  uint8_t *pos = pixel(x, y);
+  uint8_t *pos = pixel(x, y + covered);
 
   if (color->primary.ALPHA == 255) {
-    for (size_t j = 0; j < 4; ++j, pos = pixel(x, y + j))
+    for (size_t j = covered; j < 4; ++j, pos = pixel(x, y + j))
       for (size_t i = 0; i < 4; ++i, pos += CHANSPERPIXEL)
         memcpy(pos, sprite[j][i], BYTESPERPIXEL);
   } else {
-    for (size_t j = 0; j < 4; ++j, pos = pixel(x, y + j))
+    for (size_t j = covered; j < 4; ++j, pos = pixel(x, y + j))
       for (size_t i = 0; i < 4; ++i, pos += CHANSPERPIXEL)
         blend(pos, (uint8_t *)sprite[j][i]);
   }

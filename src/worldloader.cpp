@@ -276,8 +276,8 @@ void Terrain::Data::loadChunk(const uint32_t offset, FILE *regionHandle,
 }
 
 int16_t blockAtPost116(const uint64_t length,
-                       const std::vector<int64_t> *blockStates, uint8_t x,
-                       uint8_t z, uint8_t y) {
+                       const std::vector<int64_t> *blockStates,
+                       const uint16_t index) {
   // The `BlockStates` array contains data on the section's blocks. You have
   // to extract it by understanfing its structure.
   //
@@ -288,8 +288,6 @@ int16_t blockAtPost116(const uint64_t length,
   // name.
   //
   // NEW in 1.16, longs are padded by 0s when a block cannot fit.
-
-  const uint64_t index = (x & 0x0f) + ((z & 0x0f) + (y & 0x0f) * 16) * 16;
 
   // The length of a block index has to be coded on the minimal possible size,
   // which is the logarithm in base2 of the size of the palette, or 4 if the
@@ -316,8 +314,8 @@ int16_t blockAtPost116(const uint64_t length,
 }
 
 int16_t blockAtPre116(const uint64_t length,
-                      const std::vector<int64_t> *blockStates, uint8_t x,
-                      uint8_t z, uint8_t y) {
+                      const std::vector<int64_t> *blockStates,
+                      const uint16_t index) {
   // The `BlockStates` array contains data on the section's blocks. You have to
   // extract it by understanfing its structure.
   //
@@ -325,8 +323,6 @@ int16_t blockAtPre116(const uint64_t length,
   // indexes, whose element size depends on the size of the Palette. This
   // routine locates the necessary long, extracts the block with bit
   // comparisons, and cross-references it in the palette to get the block name.
-
-  const uint64_t index = (x & 0x0f) + ((z & 0x0f) + (y & 0x0f) * 16) * 16;
 
   // The length of a block index has to be coded on the minimal possible size,
   // which is the logarithm in base2 of the size of the palette, or 4 if the

@@ -103,6 +103,14 @@ struct Color {
                          double(G) * double(G) * .7152 +
                          double(B) * double(B) * .0722);
   }
+
+  bool operator==(const Colors::Color &other) {
+    return (R == other.R && G == other.G && B == other.B);
+  }
+
+  bool operator!=(const Colors::Color &other) {
+    return !this->operator==(other);
+  }
 };
 
 struct Block {
